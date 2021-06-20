@@ -1,0 +1,114 @@
+#This project was created for High Tech Hacks 2021
+
+from tkinter import *
+import mouse
+import keyboard
+import threading
+from pynput import keyboard as ky
+
+def record():
+    global mouse_events
+    global keyboard_events
+    mouse_events = []
+
+    mouse.hook(mouse_events.append)
+
+    keyboard.start_recording()
+
+    keyboard.wait("shift + enter")
+
+    keyboard_events = keyboard.stop_recording()
+    mouse.unhook(mouse_events.append)
+
+    del mouse_events[:-1]
+    print(mouse_events)
+
+    return mouse_events,keyboard_events
+
+
+def play(mouse_events,keyboard_events):
+    if(len(mouse_events)== 0 | len(keyboard_events)== 0 ):
+        print('There are no logged clicks/keypresses!')
+    else:
+        k_thread = threading.Thread(target = lambda :keyboard.play(keyboard_events))
+        k_thread.start()
+
+        m_thread = threading.Thread(target = lambda :mouse.play(mouse_events))
+        m_thread.start()
+
+        k_thread.join()
+        m_thread.join()
+
+def on_press(key):
+    print(key)
+    global mouse_events
+    global keyboard_events
+    global record
+    global play
+    if str(key) == "Key.delete":
+        record()
+    if str(key) == "Key.page_up":
+        run()
+
+
+def show_mouse_records(mouse_events):
+    if (len(mouse_events) == 0):
+        print('There are no logged clicks/movements')
+    else:
+        mouse_file = open("mouse.txt", "w")
+        for i in mouse_events:
+            mouse_file.write(i + "\n")
+        mouse_file.close()
+
+
+def show_keyboard_records(keyboard_events):
+    if (len(keyboard_events) == 0):
+        print('There are no logged keypresses')
+    else:
+        keyboard_file = open("keyboard.txt", "w")
+        for i in keyboard_events:
+            keyboard_file.write(i + "\n")
+        keyboard_file.close()
+
+def run():
+    play(mouse_events, keyboard_events)
+
+def delete():
+    global mouse_events
+    mouse_events = []
+
+
+
+
+root = Tk()
+root.title("Meaningful name")
+
+listener = ky.Listener(
+    on_press=on_press)
+listener.start()
+
+
+root.geometry("350x150+0+0")
+
+start_recording_button = Button(root, text="Start recording", pady=10, command = lambda: [delete(), record()])
+start_recording_button.place(x=130, y=110)
+
+
+play_button = Button(root, text="Play", pady=10, padx=50, command = lambda: run())
+play_button.place(x=218, y=110)
+
+
+Delete_button = Button(root, text="Delete recording", pady=5, padx=18, command= lambda: delete())
+Delete_button.place(x=217, y=76)
+
+label1 = Label(root, text="Start recording shortcut:\ndelete")
+label1.place(x=1, y=1)
+
+label2 = Label(root, text="End recording shortcut:\nshift+enter")
+label2.place(x=1, y=40)
+
+label3 = Label(root, text="Play recording shortcut:\npage up")
+label3.place(x=1, y=70)
+
+
+root.mainloop()
